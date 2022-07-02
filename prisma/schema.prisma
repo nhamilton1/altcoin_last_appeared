@@ -11,8 +11,8 @@ datasource db {
 }
 
 model coins {
-  coin_name        String   @id @unique
-  price            Float
-  first_appearance DateTime
-  last_appearance  DateTime
+  coin_name      String    @id @unique
+  price          Json[]
+  first_appeared DateTime
+  last_appeared  DateTime?
 }
