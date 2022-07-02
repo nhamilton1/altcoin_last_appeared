@@ -82,6 +82,7 @@ const main = async () => {
 
                 // if the coin_name reappears in the response array, then update last_appeared to null
                 else if (response.data.data.findIndex((j: any) => j.name === i.coin_name) !== -1) {
+                    console.log(`On ${date}, ${i.coin_name} has reappeared in the market.`)
                     i.last_appeared = null
                 }
             })
