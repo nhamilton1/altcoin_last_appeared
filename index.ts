@@ -35,8 +35,11 @@ const main = async () => {
     let counter = 0
 
     while (new Date(date).getTime() <= stopDate) {
-        // sleep for 2 seconds before making the next api request
+        
+        // sleep for 1.3 seconds before making the next api request
+        // this is to prevent from being blocked from making requests
         await new Promise(resolve => setTimeout(resolve, 1300))
+
         try {
             const url = `https://web-api.coinmarketcap.com/v1/cryptocurrency/listings/historical?&date=${date}&limit=5000&start=${START}`
             console.log("fetching date: ", date)
@@ -56,6 +59,7 @@ const main = async () => {
                         last_appeared: null
                     })
                 }
+
                 // if the coin is already in the results array, add the price to the array
                 else {
                     const index = results.findIndex(j => j.coin_name === i.name)
@@ -72,8 +76,7 @@ const main = async () => {
             results.map((i: fetchedDataArray) => {
                 if (!i.last_appeared) {
                     if (response.data.data.findIndex((j: any) => j.name === i.coin_name) === -1) {
-                        // given two dates, find how many days have passed between them
-
+                        //finds how many days have passed between them
                         const days = Math.abs(Math.round((new Date(i.first_appeared).getTime() - new Date(date).getTime()) / (1000 * 60 * 60 * 24)))
                         console.log(`On ${date}, ${i.coin_name} was removed from the market. Had a life span of ${days} days.`)
                         i.last_appeared = new Date(date)
@@ -105,9 +108,6 @@ const main = async () => {
         }
     }
 
-    // results.map((i: fetchedDataArray) => console.log(i))
-
-
     //add the results array to the database
     await prisma.coins.createMany({
         data: results.map((i: fetchedDataArray) => {
@@ -121,14 +121,12 @@ const main = async () => {
         skipDuplicates: true
     })
 
-
     console.log('amount of coins', results.length)
     const count = results.filter((i: fetchedDataArray) => i.last_appeared !== null).length
     console.log('number of coins that left the market', count)
     console.log(`${count / results.length * 100}% of coins left the market`)
     console.log(`fetched from ${new Date(date).toLocaleDateString('en-CA')} to ${new Date(stopDate).toLocaleDateString('en-CA')}`)
     console.timeEnd('fetch')
-
 }
 
 main()
