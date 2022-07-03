@@ -14,8 +14,8 @@ interface fetchedData {
 interface fetchedDataArray {
     coin_name: string;
     first_appeared: Date | string;
+    price: Array<string>;
     last_appeared: string | Date | null;
-    [key: string]: any;
 }
 
 // https://web-api.coinmarketcap.com/v1/cryptocurrency/listings/historical?&date=2022-02-07&limit=5000&start=1
@@ -38,54 +38,41 @@ const main = async () => {
     while (new Date(date).getTime() <= stopDate) {
         // sleep for 1.3 seconds before making the next api request
         // this is to prevent from being blocked from making requests
-        // await new Promise((resolve) => setTimeout(resolve, 1300));
-        let formattedDate = date.toString().replace(/-/g, "_");
+        await new Promise((resolve) => setTimeout(resolve, 1300));
+
         try {
             const url = `https://web-api.coinmarketcap.com/v1/cryptocurrency/listings/historical?&date=${date}&limit=5000&start=${START}`;
             console.log("fetching date: ", date);
             const response = await axios.get(url);
             fetchedLength = response.data.data.length;
-            response.data.data.map(async (i: fetchedData) => {
+            response.data.data.map((i: fetchedData) => {
                 // push only unqiue coins to the results array
                 if (!results.find((j) => j.coin_name === i.name)) {
-                   await prisma.coinsManyDates.createMany({
-                        data: {
-                            coin_name: i.name,
-                            first_appeared: new Date(i.date_added),
-                            last_appeared: null,
-                            Date_2013_04_28: i.quote.USD.price,
-                            [`Date_${formattedDate}`]: i.quote.USD.price,
-                        },
-                        skipDuplicates: true,
-                    })
                     results.push({
                         coin_name: i.name,
                         first_appeared: new Date(i.date_added),
-                        [`Date_${formattedDate}`]: i.quote.USD.price,
+                        price: [
+
+                            new Date(i.date_added).toLocaleDateString(
+                                "en-CA"
+                            ), String(i.quote.USD.price)
+                        ],
                         last_appeared: null,
                     });
                 }
 
                 // if the coin is already in the results array, add the price to the array
                 else {
-                    await prisma.coinsManyDates.update({
-                        where: {
-                            coin_name: i.name
-                        }, data: {
-                            [`Date_${formattedDate}`]: i.quote.USD.price,
-                        },
-                    })
-                    results.map((j) => {
-                        if (j.coin_name === i.name) {
-                            j[`Date_${formattedDate}`] = i.quote.USD.price;
-                        }
-                    })
+                    const index = results.findIndex((j) => j.coin_name === i.name);
+                    results[index].price.push(new Date(date).toLocaleDateString(
+                        "en-CA"
+                    ), String(i.quote.USD.price))
                 }
             });
 
             // if the coin_name is not in the response array, then it means it was removed from the market.
             // update the last_appeared date to the date of the last appearance of the coin_name
-            results.map(async (i: fetchedDataArray) => {
+            results.map((i: fetchedDataArray) => {
                 if (!i.last_appeared) {
                     if (
                         response.data.data.findIndex((j: any) => j.name === i.coin_name) ===
@@ -102,13 +89,6 @@ const main = async () => {
                         console.log(
                             `On ${date}, ${i.coin_name} was removed from the market. Had a life span of ${days} days.`
                         );
-                        await prisma.coinsManyDates.update({
-                            where: {
-                                coin_name: i.coin_name
-                            }, data: {
-                                last_appeared: new Date(date),
-                            }
-                        })
                         i.last_appeared = new Date(date);
                     }
                 }
@@ -121,13 +101,6 @@ const main = async () => {
                     console.log(
                         `On ${date}, ${i.coin_name} has reappeared in the market.`
                     );
-                    await prisma.coinsManyDates.update({
-                        where: {
-                            coin_name: i.coin_name
-                        }, data: {
-                            last_appeared: null,
-                        }
-                    })
                     i.last_appeared = null;
                 }
             });
@@ -150,6 +123,20 @@ const main = async () => {
             START = 1;
         }
     }
+
+    //add the results array to the database
+    await prisma.coinsPriceArray.createMany({
+        data: results.map((i: fetchedDataArray) => {
+            return {
+                coin_name: i.coin_name,
+                first_appeared: i.first_appeared,
+                price: i.price,
+                last_appeared: i.last_appeared,
+            };
+        }),
+        skipDuplicates: true,
+    });
+    
 
     console.log("amount of coins", results.length);
     const count = results.filter(

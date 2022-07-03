@@ -132,7 +132,7 @@ const main = async () => {
     }
 
     //add the results array to the database
-    await prisma.coinsTest.createMany({
+    await prisma.coinsPriceDate.createMany({
         data: results.map((i: fetchedDataArray) => {
             return {
                 coin_name: i.coin_name,

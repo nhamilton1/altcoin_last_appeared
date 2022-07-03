@@ -17,7 +17,7 @@ model coins {
   last_appeared  DateTime?
 }
 
-model coinsTest {
+model coinsPriceDate{
   coin_name      String     @id @unique
   first_appeared DateTime
   last_appeared  DateTime?
@@ -25,14 +25,7 @@ model coinsTest {
   price          Float[]
 }
 
-model coinsTest2 {
-  coin_name      String    @id @unique
-  price          String[]
-  first_appeared DateTime
-  last_appeared  DateTime?
-}
-
-model coinsTest3 {
+model coinsPriceArray {
   coin_name      String    @id @unique
   price          Json[]
   first_appeared DateTime

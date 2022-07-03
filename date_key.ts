@@ -14,7 +14,7 @@ interface fetchedData {
 interface fetchedDataArray {
     coin_name: string;
     first_appeared: Date | string;
-    price: Array<string>;
+    price: Array<{ [key: string]: number }>;
     last_appeared: string | Date | null;
 }
 
@@ -51,12 +51,9 @@ const main = async () => {
                     results.push({
                         coin_name: i.name,
                         first_appeared: new Date(i.date_added),
-                        price: [
-
-                            new Date(i.date_added).toLocaleDateString(
-                                "en-CA"
-                            ), String(i.quote.USD.price)
-                        ],
+                        price: [{
+                            [`${i.date_added}`]: i.quote.USD.price,
+                        }],
                         last_appeared: null,
                     });
                 }
@@ -64,9 +61,9 @@ const main = async () => {
                 // if the coin is already in the results array, add the price to the array
                 else {
                     const index = results.findIndex((j) => j.coin_name === i.name);
-                    results[index].price.push(new Date(date).toLocaleDateString(
-                        "en-CA"
-                    ), String(i.quote.USD.price))
+                    results[index].price.push({
+                        [`${date}`]: i.quote.USD.price,
+                    })
                 }
             });
 
@@ -125,18 +122,17 @@ const main = async () => {
     }
 
     //add the results array to the database
-    await prisma.coinsTest2.createMany({
+    await prisma.coins.createMany({
         data: results.map((i: fetchedDataArray) => {
             return {
                 coin_name: i.coin_name,
                 first_appeared: i.first_appeared,
-                price: i.price,
+                price: i.price.map((j: any) => j),
                 last_appeared: i.last_appeared,
             };
         }),
         skipDuplicates: true,
     });
-    
 
     console.log("amount of coins", results.length);
     const count = results.filter(
