@@ -16,3 +16,25 @@ model coins {
   first_appeared DateTime
   last_appeared  DateTime?
 }
+
+model coinsTest {
+  coin_name      String    @id @unique
+  first_appeared DateTime
+  last_appeared  DateTime?
+  price_date     DateTime[]
+  price          Float[]
+}
+
+model coinsTest2 {
+  coin_name      String    @id @unique
+  price          String[]
+  first_appeared DateTime
+  last_appeared  DateTime?
+}
+
+model coinsTest3 {
+  coin_name      String    @id @unique
+  price          Json[]
+  first_appeared DateTime
+  last_appeared  DateTime?
+}
